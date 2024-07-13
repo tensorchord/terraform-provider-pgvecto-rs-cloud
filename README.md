@@ -1,18 +1,31 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# Terraform Provider for PGVecto.rs Cloud 
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
+The Terraform Provider for PGVecto.rs Cloud allows Terraform to manage PGVecto.rs Cloud resources. To learn more or you have found a security issue in The Terraform Provider, please [Contact Us](https://discord.gg/KqswhpVgdU).
+> [!NOTE]  
+> PGVecto.rs is a Postgres extension that enables scalable vector search, allowing you to build powerful similarity-based applications on top of your Postgres database.
 
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
 
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
+## Table of Contents
 
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Developer](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
+- [User Guide](#user-guide)
+- [Requirements](#requirements)
+- [Building The Provider](#building-the-provider)
 
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
 
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
+## User Guide
+
+If you're building the provider, follow the instructions to [install it as a plugin](https://www.terraform.io/docs/plugins/basics.html#installing-plugins). After placing it into your plugins directory, run `terraform init` to initialize the provider.
+
+Your PGVecto.rs Cloud API Key is required to use the Terraform Provider. You can obtain an API Key by signing up for an account at [PGVecto.rs Cloud](https://cloud.pgvecto.rs).
+
+```hcl
+provider "pgvecto-rs-cloud" {
+  api_key = "<your_api_key>"
+}
+```
+Remember, your API Key should be a protected secret. See how to protect sensitive input variables when setting your API Key this way.
+
+See [PGVecto.rs Cloud Terraform Integration Overview](docs/README.md) for more information.
 
 ## Requirements
 
@@ -21,12 +34,22 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 
 ## Building The Provider
 
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
+Clone the repository
 
 ```shell
-go install
+$ git clone git@github.com:<your_org>/terraform-provider-pgvecto-rs-cloud.git
+```
+
+Enter the repository directory
+
+```shell
+$ cd terraform-provider-pgvecto-rs-cloud
+```
+
+Build the provider using the Go `install` command, the install directory depends on the GOPATH environment variable.
+
+```shell
+go install .
 ```
 
 ## Adding Dependencies
@@ -43,10 +66,6 @@ go mod tidy
 
 Then commit the changes to `go.mod` and `go.sum`.
 
-## Using the provider
-
-Fill this in for each provider
-
 ## Developing the Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
@@ -60,5 +79,5 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 *Note:* Acceptance tests create real resources, and often cost money to run.
 
 ```shell
-make testacc
+PGVECTORS_CLOUD_API_KEY=pgrs-xxxxxxxxxxxx PGVECTORS_CLOUD_API_URL=https://cloud.pgvecto.rs/api/v1 make testacc
 ```
