@@ -83,5 +83,7 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
-        run: go test -v -cover ./internal/provider/
+          PGVECTORS_CLOUD_API_URL: ${{ secrets.PGVECTORS_CLOUD_API_URL }} 
+          PGVECTORS_CLOUD_API_KEY: ${{ secrets.PGVECTORS_CLOUD_API_KEY }}
+        run: go test -v -cover ./pgvecto.rs/provider/
         timeout-minutes: 10
