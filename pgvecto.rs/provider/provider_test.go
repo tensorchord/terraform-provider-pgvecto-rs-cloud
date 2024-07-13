@@ -20,7 +20,7 @@ var (
 	}
 )
 
-// Test the provider configuration with variables set
+// Test the provider configuration with variables set.
 func TestProvider(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

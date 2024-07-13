@@ -63,11 +63,11 @@ func (r *ClusterDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Optional:            true,
 			},
 			"server_resource": schema.StringAttribute{
-				MarkdownDescription: "The server resource of the cluster instance. Avaliable aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
+				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
 				Computed:            true,
 			},
 			"region": schema.StringAttribute{
-				MarkdownDescription: "The region of the cluster instance.Avaliable options are us-east-1,eu-west-1",
+				MarkdownDescription: "The region of the cluster instance.Available options are us-east-1,eu-west-1",
 				Computed:            true,
 			},
 			"cluster_provider": schema.StringAttribute{
@@ -145,7 +145,7 @@ func (d *ClusterDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	state.ClusterName = types.StringValue(c.Spec.Name)
 	state.Plan = types.StringValue(string(c.Spec.Plan))
 	state.ServerResource = types.StringValue(string(c.Spec.ServerResource))
-	state.Region = types.StringValue(string(c.Spec.ClusterProvider.Region))
+	state.Region = types.StringValue(c.Spec.ClusterProvider.Region)
 	state.ClusterProvider = types.StringValue(string(c.Spec.ClusterProvider.Type))
 	state.Status = types.StringValue(string(c.Status.Status))
 	state.ConnectEndpoint = types.StringValue(c.Status.VectorUserEndpoint)

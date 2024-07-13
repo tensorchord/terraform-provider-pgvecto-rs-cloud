@@ -76,14 +76,14 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 			"server_resource": schema.StringAttribute{
-				MarkdownDescription: "The server resource of the cluster instance. Avaliable aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
+				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"region": schema.StringAttribute{
-				MarkdownDescription: "The region of the cluster instance.Avaliable options are us-east-1,eu-west-1",
+				MarkdownDescription: "The region of the cluster instance.Available options are us-east-1,eu-west-1",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -233,7 +233,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.ClusterName = types.StringValue(response.Spec.Name)
 	data.Plan = types.StringValue(string(response.Spec.Plan))
 	data.ServerResource = types.StringValue(string(response.Spec.ServerResource))
-	data.Region = types.StringValue(string(response.Spec.ClusterProvider.Region))
+	data.Region = types.StringValue(response.Spec.ClusterProvider.Region)
 	data.ClusterProvider = types.StringValue(string(response.Spec.ClusterProvider.Type))
 	data.Status = types.StringValue(string(response.Status.Status))
 	data.ConnectEndpoint = types.StringValue(response.Status.VectorUserEndpoint)
@@ -382,7 +382,7 @@ func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostic
 	data.ClusterName = types.StringValue(c.Spec.Name)
 	data.Plan = types.StringValue(string(c.Spec.Plan))
 	data.ServerResource = types.StringValue(string(c.Spec.ServerResource))
-	data.Region = types.StringValue(string(c.Spec.ClusterProvider.Region))
+	data.Region = types.StringValue(c.Spec.ClusterProvider.Region)
 	data.ClusterProvider = types.StringValue(string(c.Spec.ClusterProvider.Type))
 	data.Status = types.StringValue(string(c.Status.Status))
 	data.ConnectEndpoint = types.StringValue(c.Status.VectorUserEndpoint)
