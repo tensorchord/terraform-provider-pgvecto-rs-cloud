@@ -12,8 +12,7 @@ on:
       - 'README.md'
 
 # Testing only needs permissions to read the repository contents.
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   # Ensure project builds before running testing matrix
@@ -83,7 +82,7 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
-          PGVECTORS_CLOUD_API_URL: ${{ secrets.PGVECTORS_CLOUD_API_URL }} 
+          PGVECTORS_CLOUD_API_URL: ${{ secrets.PGVECTORS_CLOUD_API_URL }}  
           PGVECTORS_CLOUD_API_KEY: ${{ secrets.PGVECTORS_CLOUD_API_KEY }}
         shell: bash
         run: PGVECTORS_CLOUD_API_URL="$PGVECTORS_CLOUD_API_URL" PGVECTORS_CLOUD_API_KEY="$PGVECTORS_CLOUD_API_URL"  go test -v -cover ./pgvecto.rs/provider/
