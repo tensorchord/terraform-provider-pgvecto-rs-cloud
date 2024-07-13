@@ -84,6 +84,5 @@ jobs:
           TF_ACC: "1"
           PGVECTORS_CLOUD_API_URL: ${{ secrets.PGVECTORS_CLOUD_API_URL }}  
           PGVECTORS_CLOUD_API_KEY: ${{ secrets.PGVECTORS_CLOUD_API_KEY }}
-        shell: bash
-        run: PGVECTORS_CLOUD_API_URL="$PGVECTORS_CLOUD_API_URL" PGVECTORS_CLOUD_API_KEY="$PGVECTORS_CLOUD_API_URL"  go test -v -cover ./pgvecto.rs/provider/
+        run: go test -v -cover ./pgvecto.rs/provider/
         timeout-minutes: 10
