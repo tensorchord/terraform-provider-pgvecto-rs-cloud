@@ -31,6 +31,6 @@ Cluster Data Source
 - `connect_endpoint` (String) The psql connection endpoint of the cluster.
 - `database_name` (String) The name of the database.
 - `pg_data_disk_size` (String) The size of the PGData disk in GB, please insert between 1 and 16384.
-- `region` (String) The region of the cluster instance.Avaliable options are us-east-1,eu-west-1
-- `server_resource` (String) The server resource of the cluster instance. Avaliable aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g
+- `region` (String) The region of the cluster instance.Available options are us-east-1,eu-west-1
+- `server_resource` (String) The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g
 - `status` (String) The current status of the cluster. Possible values are Initializing, Ready, NotReady, Deleted, Upgrading, Suspended, Resuming.
