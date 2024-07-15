@@ -4,13 +4,13 @@ page_title: "pgvecto-rs-cloud Provider"
 subcategory: ""
 description: |-
   You can use the this Terraform provider to manage resources supported
-  by PGVecto.rs Cloud https://cloud.pgvecto.rs. You can refer to get started guide ./get-start.md for more information.
+  by PGVecto.rs Cloud https://cloud.pgvecto.rs. You can refer to get started guide https://docs.pgvecto.rs/cloud/manage/terraform.html for more information.
 ---
 
 # pgvecto-rs-cloud Provider
 
 You can use the this Terraform provider to manage resources supported 
-by [PGVecto.rs Cloud](https://cloud.pgvecto.rs). You can refer to [get started guide](./get-start.md) for more information.
+by [PGVecto.rs Cloud](https://cloud.pgvecto.rs). You can refer to [get started guide](https://docs.pgvecto.rs/cloud/manage/terraform.html) for more information.
 
 ## Example Usage
 
