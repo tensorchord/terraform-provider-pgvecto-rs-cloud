@@ -41,8 +41,7 @@ func (p *PGVectorsProvider) Metadata(ctx context.Context, req provider.MetadataR
 func (p *PGVectorsProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `You can use the this Terraform provider to manage resources supported 
-by [PGVecto.rs Cloud](https://cloud.pgvecto.rs). The provider must be configured with the proper 
-credentials before use. You can provide credentials via the PGVECTORS_CLOUD_API_KEY environment variable.`,
+by [PGVecto.rs Cloud](https://cloud.pgvecto.rs). You can refer to [get started guide](./get-start.md) for more information.`,
 
 		Attributes: map[string]schema.Attribute{
 			"api_key": schema.StringAttribute{

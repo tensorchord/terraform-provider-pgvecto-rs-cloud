@@ -198,7 +198,6 @@ func (c *Client) doRequest(req *http.Request, v any) error {
 	if err != nil {
 		return err
 	}
-
 	defer res.Body.Close()
 
 	if res.StatusCode >= http.StatusBadRequest {

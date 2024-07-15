@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -35,6 +36,7 @@ type ClusterDataSourceModel struct {
 	Status          types.String `tfsdk:"status"`
 	ConnectEndpoint types.String `tfsdk:"connect_endpoint"`
 	PGDataDiskSize  types.String `tfsdk:"pg_data_disk_size"`
+	LastUpdated     types.String `tfsdk:"last_updated"`
 	DatabaseName    types.String `tfsdk:"database_name"`
 }
 
@@ -85,6 +87,9 @@ func (r *ClusterDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			"pg_data_disk_size": schema.StringAttribute{
 				MarkdownDescription: "The size of the PGData disk in GB, please insert between 1 and 16384.",
 				Computed:            true,
+			},
+			"last_updated": schema.StringAttribute{
+				Computed: true,
 			},
 			"database_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the database.",
@@ -151,6 +156,7 @@ func (d *ClusterDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	state.ConnectEndpoint = types.StringValue(c.Status.VectorUserEndpoint)
 	state.PGDataDiskSize = types.StringValue(c.Spec.PostgreSQLConfig.PGDataDiskSize)
 	state.DatabaseName = types.StringValue(c.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
+	state.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC850))
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
