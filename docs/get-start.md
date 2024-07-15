@@ -86,7 +86,7 @@ By following these steps, you should have the PGVecto.rs Cloud Terraform provide
 ## Manage PGVecto.rs Cloud Cluster
 
 ### Create a Enterprise Plan
-The following example demonstrates how to create a PostgreSQL cluster with the Enterprise plan. For more information about the options, refer to the [PGVecto.rs Cloud documentation](https://docs.pgvecto.rs/cloud/manage/cluster.html#create-a-cluster).
+The following example demonstrates how to create a PostgreSQL cluster with the Enterprise plan. For more information about the options, refer to the [Resource Schema](https://registry.terraform.io/providers/tensorchord/pgvecto-rs-cloud/latest/docs/resources/cluster).
 
 ```hcl
 resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster" {
@@ -250,6 +250,8 @@ test=>
 ```
 
 ### Upgrade the cluster
+
+Up to now, we only support upgrading the server resource, plan and disk size. There are some restrictions on the upgrade operation, such as the cpu and memory of the server resource must be greater or equal to the original one, the disk size must be greater or equal to the original one. And the plan upgrade must from the `Starter` to `Enterprise`.
 
 ```diff
 + server_resource   = "aws-r7i-large-2c-16g"
