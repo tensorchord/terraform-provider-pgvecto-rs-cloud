@@ -1,3 +1,10 @@
-provider "scaffolding" {
-  # example configuration here
+terraform {
+  required_providers {
+    pgvecto-rs-cloud = {
+      source = "tensorchord/pgvecto-rs-cloud"
+    }
+  }
+}
+
+provider "pgvecto-rs-cloud" {
 }
