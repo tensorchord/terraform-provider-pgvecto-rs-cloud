@@ -15,6 +15,7 @@ func TestAccClusterDataSource(t *testing.T) {
 				Config: testAccCheckAPIKeyConfigBasic() + testAccClusterDataConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.pgvecto-rs-cloud_cluster.starter_plan_cluster", "id"),
+					resource.TestCheckResourceAttrSet("data.pgvecto-rs-cloud_cluster.starter_plan_cluster", "last_updated"),
 				),
 			},
 		},

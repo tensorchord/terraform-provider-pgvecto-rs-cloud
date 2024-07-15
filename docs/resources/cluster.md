@@ -34,6 +34,7 @@ Cluster resource. This resource allows you to create a new PGVecto.rs cluster.
 
 - `connect_endpoint` (String) The psql connection endpoint of the cluster.
 - `id` (String) Cluster identifier
+- `last_updated` (String)
 - `status` (String) The current status of the cluster. Possible values are Initializing, Ready, NotReady, Deleted, Upgrading, Suspended, Resuming.
 
 <a id="nestedblock--timeouts"></a>

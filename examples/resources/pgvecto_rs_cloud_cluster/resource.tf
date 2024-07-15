@@ -24,11 +24,21 @@ resource "pgvecto-rs-cloud_cluster" "starter_plan_cluster" {
 
 resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster" {
   account_id        = "8364ded2-5580-45c4-a394-edfa582e35a0"
-  cluster_name      = "starter-plan-cluster"
+  cluster_name      = "enterprise-plan-cluster"
   plan              = "Enterprise"
   server_resource   = "aws-m7i-large-2c-8g"
   region            = "eu-west-1"
   cluster_provider  = "aws"
   database_name     = "test"
   pg_data_disk_size = "10"
+}
+
+output "psql_endpoint_starter" {
+  description = "Endpoint for the PGVecto.rs Cloud Starter PostgreSQL database"
+  value       = pgvecto-rs-cloud_cluster.starter_plan_cluster.connect_endpoint
+}
+
+output "psql_endpoint_enterprise" {
+  description = "Endpoint for the PGVecto.rs Cloud Enterprise PostgreSQL database"
+  value       = pgvecto-rs-cloud_cluster.enterprise_plan_cluster.connect_endpoint
 }

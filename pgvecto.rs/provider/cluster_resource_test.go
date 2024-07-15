@@ -19,6 +19,7 @@ func TestAccClusterResource(t *testing.T) {
 				Config: testAccCheckAPIKeyConfigBasic() + testAccClusterResourceConfig(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("pgvecto-rs-cloud_cluster.starter_plan_cluster", "id"),
+					resource.TestCheckResourceAttrSet("pgvecto-rs-cloud_cluster.starter_plan_cluster", "last_updated"),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "cluster_name", rName),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "account_id", "5c3cb62b-d00b-4dda-85e6-2c0452d50138"),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "plan", "Enterprise"),

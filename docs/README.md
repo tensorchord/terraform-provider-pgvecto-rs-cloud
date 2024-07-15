@@ -1,1 +1,0 @@
-# Terraform Integration Overview with PGVecto.rs Cloud

@@ -78,9 +78,6 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"server_resource": schema.StringAttribute{
 				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
 				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The region of the cluster instance.Available options are us-east-1,eu-west-1",
@@ -92,9 +89,6 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"cluster_provider": schema.StringAttribute{
 				MarkdownDescription: "The cloud provider of the cluster instance. At present, only aws is supported.",
 				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"status": schema.StringAttribute{
 				MarkdownDescription: "The current status of the cluster. Possible values are Initializing, Ready, NotReady, Deleted, Upgrading, Suspended, Resuming.",
@@ -107,9 +101,6 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"pg_data_disk_size": schema.StringAttribute{
 				MarkdownDescription: "The size of the PGData disk in GB, please insert between 1 and 16384.",
 				Optional:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"database_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the database.",
@@ -117,6 +108,9 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+			},
+			"last_updated": schema.StringAttribute{
+				Computed: true,
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -164,16 +158,15 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	checkPlan := func(data ClusterResourceModel) (bool, error) {
-
 		if data.Plan.IsNull() {
-			return false, fmt.Errorf("Plan is required")
+			return false, errors.New("plan is required")
 		}
 
 		switch client.CNPGClusterPlan(data.Plan.ValueString()) {
 		case client.CNPGClusterPlanStarter, client.CNPGClusterPlanEnterprise:
 			return true, nil
 		default:
-			return false, fmt.Errorf("Invalid plan: %s", data.Plan.ValueString())
+			return false, fmt.Errorf("invalid plan: %s", data.Plan.ValueString())
 		}
 	}
 
@@ -191,7 +184,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		case client.ServerResourceAWST3XLarge, client.ServerResourceAWSM7ILarge, client.ServerResourceAWSR7ILarge, client.ServerResourceAWSR7IXLarge:
 			return true, nil
 		default:
-			return false, fmt.Errorf("Invalid ServerResource: %s", data.ServerResource.ValueString())
+			return false, fmt.Errorf("invalid ServerResource: %s", data.ServerResource.ValueString())
 		}
 	}
 
@@ -242,6 +235,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	})
 	data.PGDataDiskSize = types.StringValue(normalized)
 	data.DatabaseName = types.StringValue(response.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
+	data.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC850))
 
 	// Wait for cluster to be RUNNING
 	// Create() is passed a default timeout to use if no value
@@ -291,12 +285,27 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Only support changes of cuSize - all other attributes are set to ForceNew
-	_, err := r.client.UpgradeCluster(state.AccountId.String(), state.ClusterId.ValueString(), client.CNPGClusterUpgradeRequest{
+	// Only support changes of plan, server_resource, pg_data_disk_size
+	response, err := r.client.UpgradeCluster(state.AccountId.String(), state.ClusterId.ValueString(), client.CNPGClusterUpgradeRequest{
 		Plan:           client.CNPGClusterPlan(plan.Plan.ValueString()),
 		ServerResource: client.ServerResource(plan.ServerResource.ValueString()),
 		PGDataDiskSize: plan.PGDataDiskSize.ValueString(),
 	})
+
+	state.ClusterId = types.StringValue(response.Spec.ID)
+	state.ClusterName = types.StringValue(response.Spec.Name)
+	state.Plan = types.StringValue(string(response.Spec.Plan))
+	state.ServerResource = types.StringValue(string(response.Spec.ServerResource))
+	state.Region = types.StringValue(response.Spec.ClusterProvider.Region)
+	state.ClusterProvider = types.StringValue(string(response.Spec.ClusterProvider.Type))
+	state.Status = types.StringValue(string(response.Status.Status))
+	state.ConnectEndpoint = types.StringValue(response.Status.VectorUserEndpoint)
+	normalized := strings.TrimFunc(response.Spec.PostgreSQLConfig.PGDataDiskSize, func(r rune) bool {
+		return r < '0' || r > '9'
+	})
+	state.PGDataDiskSize = types.StringValue(normalized)
+	state.DatabaseName = types.StringValue(response.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
+	state.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC850))
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to upgrade cluster", err.Error())
@@ -364,6 +373,7 @@ type ClusterResourceModel struct {
 	ConnectEndpoint types.String   `tfsdk:"connect_endpoint"`
 	PGDataDiskSize  types.String   `tfsdk:"pg_data_disk_size"`
 	DatabaseName    types.String   `tfsdk:"database_name"`
+	LastUpdated     types.String   `tfsdk:"last_updated"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -388,7 +398,7 @@ func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostic
 	data.ConnectEndpoint = types.StringValue(c.Status.VectorUserEndpoint)
 	data.PGDataDiskSize = types.StringValue(c.Spec.PostgreSQLConfig.PGDataDiskSize)
 	data.DatabaseName = types.StringValue(c.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
-
+	data.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC850))
 	return diags
 }
 

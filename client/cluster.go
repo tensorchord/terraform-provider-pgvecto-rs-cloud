@@ -1,6 +1,9 @@
 package client
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type CNPGClusterPlan string
 
@@ -76,6 +79,7 @@ type CNPGClusterStatus struct {
 	VectorUserEndpoint string        `json:"vector_endpoint,omitempty"`
 	ClusterID          string        `json:"cluster_id,omitempty"`
 	ProjectID          string        `json:"project_id,omitempty"`
+	UpdatedAt          time.Time     `json:"updated_at,omitempty"`
 }
 
 type CNPGClusterSpec struct {
