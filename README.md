@@ -25,7 +25,7 @@ provider "pgvecto-rs-cloud" {
 ```
 Remember, your API Key should be a protected secret. See how to protect sensitive input variables when setting your API Key this way.
 
-See [PGVecto.rs Cloud Terraform Integration Overview](docs/README.md) for more information.
+See [PGVecto.rs Cloud Terraform Integration Overview](https://docs.pgvecto.rs/cloud/manage/terraform.html) for more information.
 
 ## Requirements
 
