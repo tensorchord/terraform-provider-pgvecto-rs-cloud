@@ -38,6 +38,7 @@ type ClusterDataSourceModel struct {
 	PGDataDiskSize  types.String `tfsdk:"pg_data_disk_size"`
 	LastUpdated     types.String `tfsdk:"last_updated"`
 	DatabaseName    types.String `tfsdk:"database_name"`
+	EnablePooler    types.Bool   `tfsdk:"enable_pooler"`
 }
 
 func (d *ClusterDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -93,6 +94,10 @@ func (r *ClusterDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"database_name": schema.StringAttribute{
 				MarkdownDescription: "The name of the database.",
+				Computed:            true,
+			},
+			"enable_pooler": schema.BoolAttribute{
+				MarkdownDescription: "Enable connection pooler.",
 				Computed:            true,
 			},
 		},
@@ -153,10 +158,14 @@ func (d *ClusterDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	state.Region = types.StringValue(c.Spec.ClusterProvider.Region)
 	state.ClusterProvider = types.StringValue(string(c.Spec.ClusterProvider.Type))
 	state.Status = types.StringValue(string(c.Status.Status))
-	state.ConnectEndpoint = types.StringValue(c.Status.VectorUserEndpoint)
+	state.ConnectEndpoint = types.StringValue(c.Status.Endpoint.VectorUserEndpoint)
+	if c.Status.Endpoint.PoolerUserEndpoint != "" {
+		state.ConnectEndpoint = types.StringValue(c.Status.Endpoint.PoolerUserEndpoint)
+	}
 	state.PGDataDiskSize = types.StringValue(c.Spec.PostgreSQLConfig.PGDataDiskSize)
 	state.DatabaseName = types.StringValue(c.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
 	state.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC850))
+	state.EnablePooler = types.BoolValue(c.Spec.PostgreSQLConfig.EnablePooler)
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)

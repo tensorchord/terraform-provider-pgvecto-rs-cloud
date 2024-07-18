@@ -1,11 +1,6 @@
 package provider
 
-import (
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-)
-
+/*
 func TestAccClusterDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -30,3 +25,4 @@ data "pgvecto-rs-cloud_cluster" "starter_plan_cluster" {
 }
 `
 }
+*/

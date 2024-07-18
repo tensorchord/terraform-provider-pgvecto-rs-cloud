@@ -112,6 +112,10 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"last_updated": schema.StringAttribute{
 				Computed: true,
 			},
+			"enable_pooler": schema.BoolAttribute{
+				MarkdownDescription: "Enable pgpooler",
+				Optional:            true,
+			},
 		},
 		Blocks: map[string]schema.Block{
 			"timeouts": timeouts.Block(ctx,
@@ -209,6 +213,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 			VectorConfig: client.VectorConfig{
 				DatabaseName: data.DatabaseName.ValueString(),
 			},
+			EnablePooler: data.EnablePooler.ValueBool(),
 		},
 	}, data.AccountId.ValueString())
 
@@ -229,13 +234,17 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.Region = types.StringValue(response.Spec.ClusterProvider.Region)
 	data.ClusterProvider = types.StringValue(string(response.Spec.ClusterProvider.Type))
 	data.Status = types.StringValue(string(response.Status.Status))
-	data.ConnectEndpoint = types.StringValue(response.Status.VectorUserEndpoint)
+	data.ConnectEndpoint = types.StringValue(response.Status.Endpoint.VectorUserEndpoint)
+	if response.Status.Endpoint.PoolerUserEndpoint != "" {
+		data.ConnectEndpoint = types.StringValue(response.Status.Endpoint.PoolerUserEndpoint)
+	}
 	normalized := strings.TrimFunc(response.Spec.PostgreSQLConfig.PGDataDiskSize, func(r rune) bool {
 		return r < '0' || r > '9'
 	})
 	data.PGDataDiskSize = types.StringValue(normalized)
 	data.DatabaseName = types.StringValue(response.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
 	data.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC850))
+	data.EnablePooler = types.BoolValue(response.Spec.PostgreSQLConfig.EnablePooler)
 
 	// Wait for cluster to be RUNNING
 	// Create() is passed a default timeout to use if no value
@@ -299,13 +308,17 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	state.Region = types.StringValue(response.Spec.ClusterProvider.Region)
 	state.ClusterProvider = types.StringValue(string(response.Spec.ClusterProvider.Type))
 	state.Status = types.StringValue(string(response.Status.Status))
-	state.ConnectEndpoint = types.StringValue(response.Status.VectorUserEndpoint)
+	state.ConnectEndpoint = types.StringValue(response.Status.Endpoint.VectorUserEndpoint)
+	if response.Status.Endpoint.PoolerUserEndpoint != "" {
+		state.ConnectEndpoint = types.StringValue(response.Status.Endpoint.PoolerUserEndpoint)
+	}
 	normalized := strings.TrimFunc(response.Spec.PostgreSQLConfig.PGDataDiskSize, func(r rune) bool {
 		return r < '0' || r > '9'
 	})
 	state.PGDataDiskSize = types.StringValue(normalized)
 	state.DatabaseName = types.StringValue(response.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
 	state.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC850))
+	state.EnablePooler = types.BoolValue(response.Spec.PostgreSQLConfig.EnablePooler)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to upgrade cluster", err.Error())
@@ -375,6 +388,7 @@ type ClusterResourceModel struct {
 	DatabaseName    types.String   `tfsdk:"database_name"`
 	LastUpdated     types.String   `tfsdk:"last_updated"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
+	EnablePooler    types.Bool     `tfsdk:"enable_pooler"`
 }
 
 func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostics {
@@ -395,10 +409,14 @@ func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostic
 	data.Region = types.StringValue(c.Spec.ClusterProvider.Region)
 	data.ClusterProvider = types.StringValue(string(c.Spec.ClusterProvider.Type))
 	data.Status = types.StringValue(string(c.Status.Status))
-	data.ConnectEndpoint = types.StringValue(c.Status.VectorUserEndpoint)
+	data.ConnectEndpoint = types.StringValue(c.Status.Endpoint.VectorUserEndpoint)
+	if c.Status.Endpoint.PoolerUserEndpoint != "" {
+		data.ConnectEndpoint = types.StringValue(c.Status.Endpoint.PoolerUserEndpoint)
+	}
 	data.PGDataDiskSize = types.StringValue(c.Spec.PostgreSQLConfig.PGDataDiskSize)
 	data.DatabaseName = types.StringValue(c.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
 	data.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC850))
+	data.EnablePooler = types.BoolValue(c.Spec.PostgreSQLConfig.EnablePooler)
 	return diags
 }
 
