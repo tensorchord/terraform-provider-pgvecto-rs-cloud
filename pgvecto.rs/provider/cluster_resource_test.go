@@ -29,6 +29,7 @@ func TestAccClusterResource(t *testing.T) {
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "database_name", "test"),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "pg_data_disk_size", "5"),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "status", "Ready"),
+					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "enable_pooler", "true"),
 				),
 			},
 			{
@@ -44,6 +45,7 @@ func TestAccClusterResource(t *testing.T) {
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "database_name", "test"),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "pg_data_disk_size", "10"),
 					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "status", "Ready"),
+					resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.starter_plan_cluster", "enable_pooler", "true"),
 				),
 			},
 		},
@@ -61,6 +63,7 @@ resource "pgvecto-rs-cloud_cluster" "starter_plan_cluster" {
 	cluster_provider  = "aws"
 	database_name    = "test"
 	pg_data_disk_size = "5"
+	enable_pooler     = true
 }
 `, name)
 }
@@ -76,6 +79,7 @@ resource "pgvecto-rs-cloud_cluster" "starter_plan_cluster" {
 	cluster_provider  = "aws"
 	database_name    = "test"
 	pg_data_disk_size = "10"
+	enable_pooler     = true
 }
 `, name)
 }

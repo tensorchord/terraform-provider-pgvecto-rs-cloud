@@ -74,12 +74,18 @@ type CNPGCluster struct {
 
 type CNPGClusterStatus struct {
 	// Status is the status of the cluster.
-	Status             ClusterStatus `json:"status,omitempty"`
-	SuperUserEndpoint  string        `json:"superuser_endpoint,omitempty"`
-	VectorUserEndpoint string        `json:"vector_endpoint,omitempty"`
-	ClusterID          string        `json:"cluster_id,omitempty"`
-	ProjectID          string        `json:"project_id,omitempty"`
-	UpdatedAt          time.Time     `json:"updated_at,omitempty"`
+	Status    ClusterStatus `json:"status,omitempty"`
+	Endpoint  Endpoint      `json:"endpoint,omitempty"`
+	ClusterID string        `json:"cluster_id,omitempty"`
+	ProjectID string        `json:"project_id,omitempty"`
+	UpdatedAt time.Time     `json:"updated_at,omitempty"`
+}
+
+type Endpoint struct {
+	SuperUserEndpoint       string `json:"superuser_endpoint,omitempty"`
+	VectorUserEndpoint      string `json:"vector_endpoint,omitempty"`
+	PoolerSuperUserEndpoint string `json:"pooler_super_user_endpoint,omitempty"`
+	PoolerUserEndpoint      string `json:"pooler_user_endpoint,omitempty"`
 }
 
 type CNPGClusterSpec struct {
@@ -105,6 +111,7 @@ type PostgreSQLConfig struct {
 	Image          string       `json:"image"`
 	PGDataDiskSize string       `json:"pg_data_disk_size"`
 	VectorConfig   VectorConfig `json:"vector_config,omitempty"`
+	EnablePooler   bool         `json:"enable_pooler"`
 }
 
 type VectorConfig struct {

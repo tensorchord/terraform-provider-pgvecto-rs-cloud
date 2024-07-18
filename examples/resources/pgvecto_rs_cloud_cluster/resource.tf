@@ -19,6 +19,7 @@ resource "pgvecto-rs-cloud_cluster" "starter_plan_cluster" {
   cluster_provider  = "aws"
   database_name     = "test"
   pg_data_disk_size = "5"
+  enable_pooler     = false
 }
 
 
@@ -31,6 +32,7 @@ resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster" {
   cluster_provider  = "aws"
   database_name     = "test"
   pg_data_disk_size = "10"
+  enable_pooler     = true
 }
 
 output "psql_endpoint_starter" {
