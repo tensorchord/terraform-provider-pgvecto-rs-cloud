@@ -63,7 +63,7 @@ func (r *ClusterDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"plan": schema.StringAttribute{
 				MarkdownDescription: "The plan tier of the PGVecto.rs Cloud service. Available options are Starter and Enterprise.",
-				Optional:            true,
+				Computed:            true,
 			},
 			"server_resource": schema.StringAttribute{
 				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",

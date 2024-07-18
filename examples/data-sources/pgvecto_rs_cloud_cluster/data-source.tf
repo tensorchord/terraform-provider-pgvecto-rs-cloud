@@ -16,6 +16,7 @@ data "pgvecto-rs-cloud_cluster" "test" {
   account_id = "8364ded2-5580-45c4-a394-edfa582e35a0"
 }
 
-output "output" {
-  value = data.pgvecto-rs-cloud.test
+output "psql_endpoint_enterprise" {
+  description = "Endpoint for the PGVecto.rs Cloud PostgreSQL database"
+  value       = pgvecto-rs-cloud_cluster.test.connect_endpoint
 }
