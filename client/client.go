@@ -138,7 +138,7 @@ func WithApiKey(apiKey string) Option {
 
 func WithDefaultApiUrl() Option {
 	return func(c *Client) {
-		if c.apiKey == "" {
+		if c.apiUrl == "" {
 			c.apiUrl = defaultPGVectorsCloudURL
 		}
 	}
