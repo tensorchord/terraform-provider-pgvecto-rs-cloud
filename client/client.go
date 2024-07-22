@@ -37,6 +37,15 @@ func checkApiKey(c *Client) func() error {
 	}
 }
 
+func checkApiUrl(c *Client) func() error {
+	return func() error {
+		if c.apiUrl == "" {
+			return fmt.Errorf("ApiUrl is required")
+		}
+		return nil
+	}
+}
+
 func (client *Client) Clone(opts ...Option) (*Client, error) {
 	clone := func(c Client) *Client {
 		return &c
@@ -60,6 +69,7 @@ func (client *Client) Clone(opts ...Option) (*Client, error) {
 func validate(c *Client) error {
 	checkFns := []func() error{
 		checkApiKey(c),
+		checkApiUrl(c),
 	}
 	for _, fn := range checkFns {
 		if err := fn(); err != nil {
@@ -136,9 +146,10 @@ func WithDefaultApiUrl() Option {
 
 func OverrideApiUrl(apiUrl string) Option {
 	return func(c *Client) {
-		c.apiUrl = apiUrl
+		if apiUrl != "" {
+			c.apiUrl = apiUrl
+		}
 	}
-
 }
 
 func WithDefaultClient() Option {
