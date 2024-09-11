@@ -66,7 +66,7 @@ func TestAccClusterResource(t *testing.T) {
 
 	if testBackup {
 		steps = append(steps, resource.TestStep{
-			Config: testAccCheckAPIKeyConfigBasic() + testAccCheckResourceWithRestore(fmt.Sprintf("%s-restore",rName), backupID),
+			Config: testAccCheckAPIKeyConfigBasic() + testAccCheckResourceWithRestore(fmt.Sprintf("%s-restore", rName), backupID),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttrSet("pgvecto-rs-cloud_cluster.enterprise_plan_cluster_restore_backup", "id"),
 				resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.enterprise_plan_cluster_restore_backup", "cluster_name", rName),
@@ -87,7 +87,7 @@ func TestAccClusterResource(t *testing.T) {
 
 	if testPITR {
 		steps = append(steps, resource.TestStep{
-			Config: testAccCheckAPIKeyConfigBasic() + testAccCheckResourcePITR(fmt.Sprintf("%s-pitr",rName), clusterID, targetTime),
+			Config: testAccCheckAPIKeyConfigBasic() + testAccCheckResourcePITR(fmt.Sprintf("%s-pitr", rName), clusterID, targetTime),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttrSet("pgvecto-rs-cloud_cluster.enterprise_plan_cluster_pitr", "id"),
 				resource.TestCheckResourceAttr("pgvecto-rs-cloud_cluster.enterprise_plan_cluster_pitr", "cluster_name", rName),
