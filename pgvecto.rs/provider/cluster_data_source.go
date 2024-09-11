@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -26,19 +27,26 @@ type ClusterDataSource struct {
 
 // ClusterDataSourceModel describes the cluster data model.
 type ClusterDataSourceModel struct {
-	ClusterId       types.String `tfsdk:"id"`
-	AccountId       types.String `tfsdk:"account_id"`
-	ClusterName     types.String `tfsdk:"cluster_name"`
-	Plan            types.String `tfsdk:"plan"`
-	Region          types.String `tfsdk:"region"`
-	ServerResource  types.String `tfsdk:"server_resource"`
-	ClusterProvider types.String `tfsdk:"cluster_provider"`
-	Status          types.String `tfsdk:"status"`
-	ConnectEndpoint types.String `tfsdk:"connect_endpoint"`
-	PGDataDiskSize  types.String `tfsdk:"pg_data_disk_size"`
-	LastUpdated     types.String `tfsdk:"last_updated"`
-	DatabaseName    types.String `tfsdk:"database_name"`
-	EnablePooler    types.Bool   `tfsdk:"enable_pooler"`
+	ClusterId                types.String `tfsdk:"id"`
+	AccountId                types.String `tfsdk:"account_id"`
+	ClusterName              types.String `tfsdk:"cluster_name"`
+	Plan                     types.String `tfsdk:"plan"`
+	Image                    types.String `tfsdk:"image"`
+	Region                   types.String `tfsdk:"region"`
+	ServerResource           types.String `tfsdk:"server_resource"`
+	ClusterProvider          types.String `tfsdk:"cluster_provider"`
+	Status                   types.String `tfsdk:"status"`
+	ConnectEndpoint          types.String `tfsdk:"connect_endpoint"`
+	PGDataDiskSize           types.String `tfsdk:"pg_data_disk_size"`
+	LastUpdated              types.String `tfsdk:"last_updated"`
+	DatabaseName             types.String `tfsdk:"database_name"`
+	EnablePooler             types.Bool   `tfsdk:"enable_pooler"`
+	EnableRestore            types.Bool   `tfsdk:"enable_restore"`
+	TargetClusterID          types.String `tfsdk:"target_cluster_id"`
+	BackupID                 types.String `tfsdk:"backup_id"`
+	TargetTime               types.String `tfsdk:"target_time"`
+	FirstRecoverabilityPoint types.String `tfsdk:"first_recoverability_point"`
+	LastArchivedWALTime      types.String `tfsdk:"last_archived_wal_time"`
 }
 
 func (d *ClusterDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -63,6 +71,10 @@ func (r *ClusterDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"plan": schema.StringAttribute{
 				MarkdownDescription: "The plan tier of the PGVecto.rs Cloud service. Available options are Starter and Enterprise.",
+				Computed:            true,
+			},
+			"image": schema.StringAttribute{
+				MarkdownDescription: "The image of the cluster instance.",
 				Computed:            true,
 			},
 			"server_resource": schema.StringAttribute{
@@ -98,6 +110,30 @@ func (r *ClusterDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"enable_pooler": schema.BoolAttribute{
 				MarkdownDescription: "Enable connection pooler.",
+				Computed:            true,
+			},
+			"enable_restore": schema.BoolAttribute{
+				MarkdownDescription: "Enable restore.",
+				Computed:            true,
+			},
+			"target_cluster_id": schema.StringAttribute{
+				MarkdownDescription: "The target cluster ID for restore.",
+				Computed:            true,
+			},
+			"backup_id": schema.StringAttribute{
+				MarkdownDescription: "The backup ID for restore.",
+				Computed:            true,
+			},
+			"target_time": schema.StringAttribute{
+				MarkdownDescription: "The target time for restore.",
+				Computed:            true,
+			},
+			"first_recoverability_point": schema.StringAttribute{
+				MarkdownDescription: "The first recoverability point.",
+				Computed:            true,
+			},
+			"last_archived_wal_time": schema.StringAttribute{
+				MarkdownDescription: "The last archived WAL time.",
 				Computed:            true,
 			},
 		},
@@ -154,6 +190,7 @@ func (d *ClusterDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	state.ClusterId = types.StringValue(c.Spec.ID)
 	state.ClusterName = types.StringValue(c.Spec.Name)
 	state.Plan = types.StringValue(string(c.Spec.Plan))
+	state.Image = types.StringValue(strings.Split(c.Spec.PostgreSQLConfig.Image, ":")[1])
 	state.ServerResource = types.StringValue(string(c.Spec.ServerResource))
 	state.Region = types.StringValue(c.Spec.ClusterProvider.Region)
 	state.ClusterProvider = types.StringValue(string(c.Spec.ClusterProvider.Type))
@@ -164,13 +201,32 @@ func (d *ClusterDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 	state.PGDataDiskSize = types.StringValue(c.Spec.PostgreSQLConfig.PGDataDiskSize)
 	state.DatabaseName = types.StringValue(c.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
-	state.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC850))
-	state.EnablePooler = types.BoolValue(c.Spec.PostgreSQLConfig.EnablePooler)
+	state.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC3339))
+	if c.Spec.PostgreSQLConfig.EnablePooler {
+		state.EnablePooler = types.BoolValue(c.Spec.PostgreSQLConfig.EnablePooler)
+	}
+
+	if c.Spec.PostgreSQLConfig.RestoreConfig.Enabled {
+		state.EnableRestore = types.BoolValue(c.Spec.PostgreSQLConfig.RestoreConfig.Enabled)
+	}
+
+	if c.Spec.PostgreSQLConfig.RestoreConfig.ClusterID != "" {
+		state.TargetClusterID = types.StringValue(c.Spec.PostgreSQLConfig.RestoreConfig.ClusterID)
+	}
+
+	if c.Spec.PostgreSQLConfig.RestoreConfig.BackupID != "" {
+		state.BackupID = types.StringValue(c.Spec.PostgreSQLConfig.RestoreConfig.BackupID)
+	}
+
+	if !c.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.IsZero() {
+		state.TargetTime = types.StringValue(c.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.Format(time.RFC3339))
+	}
+	state.FirstRecoverabilityPoint = types.StringValue(c.Status.FirstRecoverabilityPoint.Format(time.RFC3339))
+	state.LastArchivedWALTime = types.StringValue(c.Status.LastArchivedWALTime.Format(time.RFC3339))
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 }

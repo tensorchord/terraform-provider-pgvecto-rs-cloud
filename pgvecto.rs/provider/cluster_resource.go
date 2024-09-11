@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,7 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier" // Import the tfsdk package
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -41,6 +43,35 @@ type ClusterResource struct {
 
 func (r *ClusterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_cluster"
+}
+
+type imageValidator struct{}
+
+func (v imageValidator) Description(ctx context.Context) string {
+	return "Validate image choose from https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags"
+}
+
+func (v imageValidator) MarkdownDescription(ctx context.Context) string {
+	return "Validate image choose from https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags"
+}
+
+func (v imageValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	// If the value is unknown or null, there is nothing to validate.
+	if req.ConfigValue.IsUnknown() || req.ConfigValue.IsNull() {
+		return
+	}
+
+	var tag types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.ParentPath().AtName("image"), &tag)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	pattern := `^\d+-v\d+\.\d+\.\d+-[a-zA-Z]+$`
+	re := regexp.MustCompile(pattern)
+	match := re.MatchString(tag.ValueString())
+	if !match {
+		resp.Diagnostics.AddError("Invalid image tag", fmt.Sprintf("Invalid image tag: %s", tag.ValueString()))
+	}
 }
 
 func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -75,6 +106,13 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"server_resource": schema.StringAttribute{
 				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
 				Required:            true,
+			},
+			"image": schema.StringAttribute{
+				MarkdownDescription: "The image of the cluster instance. You can specify the tag of the image, please select limited tags in https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags",
+				Required:            true,
+				Validators: []validator.String{
+					imageValidator{},
+				},
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The region of the cluster instance.Available options are us-east-1,eu-west-1",
@@ -112,6 +150,30 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 			"enable_pooler": schema.BoolAttribute{
 				MarkdownDescription: "Enable pgpooler",
 				Optional:            true,
+			},
+			"enable_restore": schema.BoolAttribute{
+				MarkdownDescription: "Enable restore from backup or target cluster(PITR)",
+				Optional:            true,
+			},
+			"backup_id": schema.StringAttribute{
+				MarkdownDescription: "The backup id to restore from",
+				Optional:            true,
+			},
+			"target_cluster_id": schema.StringAttribute{
+				MarkdownDescription: "The target cluster id to restore from",
+				Optional:            true,
+			},
+			"target_time": schema.StringAttribute{
+				MarkdownDescription: "The target time to restore from cluster",
+				Optional:            true,
+			},
+			"first_recoverability_point": schema.StringAttribute{
+				MarkdownDescription: "The first recoverability point of the cluster",
+				Computed:            true,
+			},
+			"last_archived_wal_time": schema.StringAttribute{
+				MarkdownDescription: "The last archived WAL time of the cluster",
+				Computed:            true,
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -197,7 +259,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	var response *client.CNPGCluster
 	var err error
 
-	response, err = r.client.CreateCluster(client.CNPGClusterSpec{
+	spec := client.CNPGClusterSpec{
 		Name:           data.ClusterName.ValueString(),
 		Plan:           client.CNPGClusterPlan(data.Plan.ValueString()),
 		ServerResource: client.ServerResource(data.ServerResource.ValueString()),
@@ -206,13 +268,48 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 			Region: data.Region.ValueString(),
 		},
 		PostgreSQLConfig: client.PostgreSQLConfig{
+			Image:          fmt.Sprintf("modelzai/pgvecto-rs:%s", data.Image.ValueString()),
 			PGDataDiskSize: data.PGDataDiskSize.ValueString(),
 			VectorConfig: client.VectorConfig{
 				DatabaseName: data.DatabaseName.ValueString(),
 			},
 			EnablePooler: data.EnablePooler.ValueBool(),
 		},
-	}, data.AccountId.ValueString())
+	}
+
+	if data.EnableRestore.ValueBool() {
+
+		if data.BackupID.IsNull() && data.TargetClusterID.IsNull() {
+			resp.Diagnostics.AddError("Either backup_id or target_cluster_id is required", "")
+			return
+		}
+
+		if !data.TargetClusterID.IsNull() && data.TargetTime.IsNull() {
+			resp.Diagnostics.AddError("target_time is required", "")
+			return
+		}
+
+		if !data.BackupID.IsNull() {
+			spec.PostgreSQLConfig.RestoreConfig = client.RestoreConfig{
+				Enabled:  true,
+				BackupID: data.BackupID.ValueString(),
+			}
+		} else {
+			targetTime, err := time.Parse(time.RFC3339, data.TargetTime.ValueString())
+			if err != nil {
+				resp.Diagnostics.AddError("Failed to parse target time", err.Error())
+				return
+			}
+
+			spec.PostgreSQLConfig.RestoreConfig = client.RestoreConfig{
+				Enabled:    true,
+				ClusterID:  data.TargetClusterID.ValueString(),
+				TargetTime: targetTime,
+			}
+		}
+
+	}
+	response, err = r.client.CreateCluster(spec, data.AccountId.ValueString())
 
 	if err != nil {
 		err := client.Error{}
@@ -227,6 +324,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.ClusterId = types.StringValue(response.Spec.ID)
 	data.ClusterName = types.StringValue(response.Spec.Name)
 	data.Plan = types.StringValue(string(response.Spec.Plan))
+	data.Image = types.StringValue(strings.Split(response.Spec.PostgreSQLConfig.Image, ":")[1])
 	data.ServerResource = types.StringValue(string(response.Spec.ServerResource))
 	data.Region = types.StringValue(response.Spec.ClusterProvider.Region)
 	data.ClusterProvider = types.StringValue(string(response.Spec.ClusterProvider.Type))
@@ -240,8 +338,28 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	})
 	data.PGDataDiskSize = types.StringValue(normalized)
 	data.DatabaseName = types.StringValue(response.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
-	data.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC850))
-	data.EnablePooler = types.BoolValue(response.Spec.PostgreSQLConfig.EnablePooler)
+	data.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC3339))
+	if response.Spec.PostgreSQLConfig.EnablePooler {
+		data.EnablePooler = types.BoolValue(response.Spec.PostgreSQLConfig.EnablePooler)
+	}
+
+	if response.Spec.PostgreSQLConfig.RestoreConfig.Enabled {
+		data.EnableRestore = types.BoolValue(response.Spec.PostgreSQLConfig.RestoreConfig.Enabled)
+	}
+
+	if response.Spec.PostgreSQLConfig.RestoreConfig.ClusterID != "" {
+		data.TargetClusterID = types.StringValue(response.Spec.PostgreSQLConfig.RestoreConfig.ClusterID)
+	}
+
+	if response.Spec.PostgreSQLConfig.RestoreConfig.BackupID != "" {
+		data.BackupID = types.StringValue(response.Spec.PostgreSQLConfig.RestoreConfig.BackupID)
+	}
+
+	if !response.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.IsZero() {
+		data.TargetTime = types.StringValue(response.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.Format(time.RFC3339))
+	}
+	data.FirstRecoverabilityPoint = types.StringValue(response.Status.FirstRecoverabilityPoint.Format(time.RFC3339))
+	data.LastArchivedWALTime = types.StringValue(response.Status.LastArchivedWALTime.Format(time.RFC3339))
 
 	// Wait for cluster to be RUNNING
 	// Create() is passed a default timeout to use if no value
@@ -301,6 +419,7 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	state.ClusterId = types.StringValue(response.Spec.ID)
 	state.ClusterName = types.StringValue(response.Spec.Name)
 	state.Plan = types.StringValue(string(response.Spec.Plan))
+	state.Image = types.StringValue(strings.Split(response.Spec.PostgreSQLConfig.Image, ":")[1])
 	state.ServerResource = types.StringValue(string(response.Spec.ServerResource))
 	state.Region = types.StringValue(response.Spec.ClusterProvider.Region)
 	state.ClusterProvider = types.StringValue(string(response.Spec.ClusterProvider.Type))
@@ -314,8 +433,28 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	})
 	state.PGDataDiskSize = types.StringValue(normalized)
 	state.DatabaseName = types.StringValue(response.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
-	state.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC850))
-	state.EnablePooler = types.BoolValue(response.Spec.PostgreSQLConfig.EnablePooler)
+	state.LastUpdated = types.StringValue(response.Status.UpdatedAt.Format(time.RFC3339))
+	if response.Spec.PostgreSQLConfig.EnablePooler {
+		state.EnablePooler = types.BoolValue(response.Spec.PostgreSQLConfig.EnablePooler)
+	}
+
+	if response.Spec.PostgreSQLConfig.RestoreConfig.Enabled {
+		state.EnableRestore = types.BoolValue(response.Spec.PostgreSQLConfig.RestoreConfig.Enabled)
+	}
+
+	if response.Spec.PostgreSQLConfig.RestoreConfig.ClusterID != "" {
+		state.TargetClusterID = types.StringValue(response.Spec.PostgreSQLConfig.RestoreConfig.ClusterID)
+	}
+
+	if response.Spec.PostgreSQLConfig.RestoreConfig.BackupID != "" {
+		state.BackupID = types.StringValue(response.Spec.PostgreSQLConfig.RestoreConfig.BackupID)
+	}
+
+	if !response.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.IsZero() {
+		state.TargetTime = types.StringValue(response.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.Format(time.RFC3339))
+	}
+	state.FirstRecoverabilityPoint = types.StringValue(response.Status.FirstRecoverabilityPoint.Format(time.RFC3339))
+	state.LastArchivedWALTime = types.StringValue(response.Status.LastArchivedWALTime.Format(time.RFC3339))
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to upgrade cluster", err.Error())
@@ -372,20 +511,27 @@ func (r *ClusterResource) ImportState(ctx context.Context, req resource.ImportSt
 
 // ClusterResourceModel describes the resource data model.
 type ClusterResourceModel struct {
-	ClusterId       types.String   `tfsdk:"id"`
-	AccountId       types.String   `tfsdk:"account_id"`
-	ClusterName     types.String   `tfsdk:"cluster_name"`
-	Plan            types.String   `tfsdk:"plan"`
-	Region          types.String   `tfsdk:"region"`
-	ServerResource  types.String   `tfsdk:"server_resource"`
-	ClusterProvider types.String   `tfsdk:"cluster_provider"`
-	Status          types.String   `tfsdk:"status"`
-	ConnectEndpoint types.String   `tfsdk:"connect_endpoint"`
-	PGDataDiskSize  types.String   `tfsdk:"pg_data_disk_size"`
-	DatabaseName    types.String   `tfsdk:"database_name"`
-	LastUpdated     types.String   `tfsdk:"last_updated"`
-	Timeouts        timeouts.Value `tfsdk:"timeouts"`
-	EnablePooler    types.Bool     `tfsdk:"enable_pooler"`
+	ClusterId                types.String   `tfsdk:"id"`
+	AccountId                types.String   `tfsdk:"account_id"`
+	ClusterName              types.String   `tfsdk:"cluster_name"`
+	Plan                     types.String   `tfsdk:"plan"`
+	Region                   types.String   `tfsdk:"region"`
+	ServerResource           types.String   `tfsdk:"server_resource"`
+	Image                    types.String   `tfsdk:"image"`
+	ClusterProvider          types.String   `tfsdk:"cluster_provider"`
+	Status                   types.String   `tfsdk:"status"`
+	ConnectEndpoint          types.String   `tfsdk:"connect_endpoint"`
+	PGDataDiskSize           types.String   `tfsdk:"pg_data_disk_size"`
+	DatabaseName             types.String   `tfsdk:"database_name"`
+	LastUpdated              types.String   `tfsdk:"last_updated"`
+	Timeouts                 timeouts.Value `tfsdk:"timeouts"`
+	EnablePooler             types.Bool     `tfsdk:"enable_pooler"`
+	EnableRestore            types.Bool     `tfsdk:"enable_restore"`
+	BackupID                 types.String   `tfsdk:"backup_id"`
+	TargetClusterID          types.String   `tfsdk:"target_cluster_id"`
+	TargetTime               types.String   `tfsdk:"target_time"`
+	FirstRecoverabilityPoint types.String   `tfsdk:"first_recoverability_point"`
+	LastArchivedWALTime      types.String   `tfsdk:"last_archived_wal_time"`
 }
 
 func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostics {
@@ -402,6 +548,7 @@ func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostic
 	data.ClusterId = types.StringValue(c.Spec.ID)
 	data.ClusterName = types.StringValue(c.Spec.Name)
 	data.Plan = types.StringValue(string(c.Spec.Plan))
+	data.Image = types.StringValue(strings.Split(c.Spec.PostgreSQLConfig.Image, ":")[1])
 	data.ServerResource = types.StringValue(string(c.Spec.ServerResource))
 	data.Region = types.StringValue(c.Spec.ClusterProvider.Region)
 	data.ClusterProvider = types.StringValue(string(c.Spec.ClusterProvider.Type))
@@ -412,8 +559,28 @@ func (data *ClusterResourceModel) refresh(client *client.Client) diag.Diagnostic
 	}
 	data.PGDataDiskSize = types.StringValue(c.Spec.PostgreSQLConfig.PGDataDiskSize)
 	data.DatabaseName = types.StringValue(c.Spec.PostgreSQLConfig.VectorConfig.DatabaseName)
-	data.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC850))
-	data.EnablePooler = types.BoolValue(c.Spec.PostgreSQLConfig.EnablePooler)
+	data.LastUpdated = types.StringValue(c.Status.UpdatedAt.Format(time.RFC3339))
+	if c.Spec.PostgreSQLConfig.EnablePooler {
+		data.EnablePooler = types.BoolValue(c.Spec.PostgreSQLConfig.EnablePooler)
+	}
+
+	if c.Spec.PostgreSQLConfig.RestoreConfig.Enabled {
+		data.EnableRestore = types.BoolValue(c.Spec.PostgreSQLConfig.RestoreConfig.Enabled)
+	}
+
+	if c.Spec.PostgreSQLConfig.RestoreConfig.ClusterID != "" {
+		data.TargetClusterID = types.StringValue(c.Spec.PostgreSQLConfig.RestoreConfig.ClusterID)
+	}
+
+	if c.Spec.PostgreSQLConfig.RestoreConfig.BackupID != "" {
+		data.BackupID = types.StringValue(c.Spec.PostgreSQLConfig.RestoreConfig.BackupID)
+	}
+
+	if !c.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.IsZero() {
+		data.TargetTime = types.StringValue(c.Spec.PostgreSQLConfig.RestoreConfig.TargetTime.Format(time.RFC3339))
+	}
+	data.FirstRecoverabilityPoint = types.StringValue(c.Status.FirstRecoverabilityPoint.Format(time.RFC3339))
+	data.LastArchivedWALTime = types.StringValue(c.Status.LastArchivedWALTime.Format(time.RFC3339))
 	return diags
 }
 
@@ -425,13 +592,15 @@ func (data *ClusterResourceModel) waitForStatus(ctx context.Context, timeout tim
 		if err != nil {
 			return retry.NonRetryableError(err)
 		}
+
 		if string(cluster.Status.Status) != status {
 			return retry.RetryableError(fmt.Errorf("cluster not yet in the %s state. Current state: %s", status, cluster.Status))
 		}
 		return nil
 	})
+
 	if err != nil {
-		diags.AddError("Failed to wait for cluster to enter the RUNNING state.", err.Error())
+		diags.AddError("Failed to wait for cluster to enter the Ready state.", err.Error())
 	}
 
 	return diags

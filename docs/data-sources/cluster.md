@@ -22,14 +22,21 @@ Cluster Data Source
 
 ### Read-Only
 
+- `backup_id` (String) The backup ID for restore.
 - `cluster_name` (String) The name of the cluster to be created. It is a string of no more than 32 characters.
 - `cluster_provider` (String) The cloud provider of the cluster instance. At present, only aws is supported.
 - `connect_endpoint` (String) The psql connection endpoint of the cluster.
 - `database_name` (String) The name of the database.
 - `enable_pooler` (Boolean) Enable connection pooler.
+- `enable_restore` (Boolean) Enable restore.
+- `first_recoverability_point` (String) The first recoverability point.
+- `image` (String) The image of the cluster instance.
+- `last_archived_wal_time` (String) The last archived WAL time.
 - `last_updated` (String)
 - `pg_data_disk_size` (String) The size of the PGData disk in GB, please insert between 1 and 16384.
 - `plan` (String) The plan tier of the PGVecto.rs Cloud service. Available options are Starter and Enterprise.
 - `region` (String) The region of the cluster instance.Available options are us-east-1,eu-west-1
 - `server_resource` (String) The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g
 - `status` (String) The current status of the cluster. Possible values are Initializing, Ready, NotReady, Deleted, Upgrading, Suspended, Resuming.
+- `target_cluster_id` (String) The target cluster ID for restore.
+- `target_time` (String) The target time for restore.

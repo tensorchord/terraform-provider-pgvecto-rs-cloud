@@ -80,4 +80,9 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 
 ```shell
 PGVECTORS_CLOUD_API_KEY=pgrs-xxxxxxxxxxxx PGVECTORS_CLOUD_API_URL=https://cloud.pgvecto.rs/api/v1 make testacc
+
+# test restore from backup
+PGVECTORS_CLOUD_API_KEY=pgrs-xxxxxxxxxxxx PGVECTORS_CLOUD_API_URL=https://cloud.pgvecto.rs/api/v1 BACKUP_ID=b29f3124-0796-43a5-b565-68e684dcb07b make testacc
+# test pitr
+PGVECTORS_CLOUD_API_KEY=pgrs-xxxxxxxxxxxx PGVECTORS_CLOUD_API_URL=https://cloud.pgvecto.rs/api/v1 CLUSTER_ID=7d06b73d-807f-4b4f-a397-1c1eac768333 TARGET_TIME=2024-09-11T00:00:00+08:00 make testacc
 ```
