@@ -74,11 +74,13 @@ type CNPGCluster struct {
 
 type CNPGClusterStatus struct {
 	// Status is the status of the cluster.
-	Status    ClusterStatus `json:"status,omitempty"`
-	Endpoint  Endpoint      `json:"endpoint,omitempty"`
-	ClusterID string        `json:"cluster_id,omitempty"`
-	ProjectID string        `json:"project_id,omitempty"`
-	UpdatedAt time.Time     `json:"updated_at,omitempty"`
+	Status                   ClusterStatus `json:"status,omitempty"`
+	Endpoint                 Endpoint      `json:"endpoint,omitempty"`
+	ClusterID                string        `json:"cluster_id,omitempty"`
+	ProjectID                string        `json:"project_id,omitempty"`
+	UpdatedAt                time.Time     `json:"updated_at,omitempty"`
+	FirstRecoverabilityPoint time.Time     `json:"first_recoverability_point,omitempty"`
+	LastArchivedWALTime      time.Time     `json:"last_archived_wal_time,omitempty"`
 }
 
 type Endpoint struct {
@@ -107,11 +109,19 @@ type CNPGClusterList struct {
 }
 
 type PostgreSQLConfig struct {
-	Instances      int          `json:"instances"`
-	Image          string       `json:"image"`
-	PGDataDiskSize string       `json:"pg_data_disk_size"`
-	VectorConfig   VectorConfig `json:"vector_config,omitempty"`
-	EnablePooler   bool         `json:"enable_pooler"`
+	Instances      int           `json:"instances"`
+	Image          string        `json:"image"`
+	PGDataDiskSize string        `json:"pg_data_disk_size"`
+	VectorConfig   VectorConfig  `json:"vector_config,omitempty"`
+	EnablePooler   bool          `json:"enable_pooler"`
+	RestoreConfig  RestoreConfig `json:"restore_config,omitempty"`
+}
+
+type RestoreConfig struct {
+	Enabled    bool      `json:"enabled,omitempty"`
+	BackupID   string    `json:"backup_id,omitempty"`
+	ClusterID  string    `json:"cluster_id,omitempty"`
+	TargetTime time.Time `json:"target_time,omitempty"`
 }
 
 type VectorConfig struct {
