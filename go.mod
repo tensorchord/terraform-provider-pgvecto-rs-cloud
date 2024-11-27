@@ -1,6 +1,7 @@
 module github.com/tensorchord/terraform-provider-pgvecto-rs-cloud
 
-go 1.21
+go 1.22.7
+
 toolchain go1.22.9
 
 require (
