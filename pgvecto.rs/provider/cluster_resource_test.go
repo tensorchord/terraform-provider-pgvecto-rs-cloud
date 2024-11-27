@@ -118,7 +118,7 @@ resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster" {
 	cluster_name      = %q
 	account_id = "5c3cb62b-d00b-4dda-85e6-2c0452d50138"
 	plan              = "Enterprise"
-	image			 = "15-v0.3.0-public"
+	image			 = "16-v0.4.0-extensions-exts"
 	server_resource   = "aws-m7i-large-2c-8g"
 	region            = "us-east-1"
 	cluster_provider  = "aws"
@@ -135,7 +135,7 @@ resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster" {
 	cluster_name      = %q
 	account_id = "5c3cb62b-d00b-4dda-85e6-2c0452d50138"
 	plan              = "Enterprise"
-	image			 = "15-v0.3.0-public"
+	image			 = "16-v0.4.0-extensions-exts"
 	server_resource   = "aws-m7i-large-2c-8g"
 	region            = "us-east-1"
 	cluster_provider  = "aws"
@@ -152,7 +152,7 @@ resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster_restore_backup" {
 	cluster_name      = %q
 	account_id = "5c3cb62b-d00b-4dda-85e6-2c0452d50138"
 	plan              = "Enterprise"
-	image			 = "15-v0.3.0-public"
+	image			 = "16-v0.4.0-extensions-exts"
 	server_resource   = "aws-m7i-large-2c-8g"
 	region            = "us-east-1"
 	cluster_provider  = "aws"
@@ -171,7 +171,7 @@ resource "pgvecto-rs-cloud_cluster" "enterprise_plan_cluster_pitr" {
 	cluster_name      = %q
 	account_id = "5c3cb62b-d00b-4dda-85e6-2c0452d50138"
 	plan              = "Enterprise"
-	image			 = "15-v0.3.0-public"
+	image			 = "16-v0.4.0-extensions-exts"
 	server_resource   = "aws-m7i-large-2c-8g"
 	region            = "us-east-1"
 	cluster_provider  = "aws"
