@@ -66,7 +66,7 @@ func (v imageValidator) ValidateString(ctx context.Context, req validator.String
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	pattern := `^\d+-v\d+\.\d+\.\d+-[a-zA-Z]+$`
+	pattern := `^\d+-v\d+\.\d+\.\d+(?:-[a-zA-Z]+(?:-[a-zA-Z]+)?)?$`
 	re := regexp.MustCompile(pattern)
 	match := re.MatchString(tag.ValueString())
 	if !match {
