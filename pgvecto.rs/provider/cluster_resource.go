@@ -48,11 +48,11 @@ func (r *ClusterResource) Metadata(ctx context.Context, req resource.MetadataReq
 type imageValidator struct{}
 
 func (v imageValidator) Description(ctx context.Context) string {
-	return "Validate image choose from https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags"
+	return "Validate image"
 }
 
 func (v imageValidator) MarkdownDescription(ctx context.Context) string {
-	return "Validate image choose from https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags"
+	return "Validate image"
 }
 
 func (v imageValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
@@ -104,11 +104,11 @@ func (r *ClusterResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Required:            true,
 			},
 			"server_resource": schema.StringAttribute{
-				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g",
+				MarkdownDescription: "The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g,aws-i4i-xlarge-4c-32g",
 				Required:            true,
 			},
 			"image": schema.StringAttribute{
-				MarkdownDescription: "The image of the cluster instance. You can specify the tag of the image, please select limited tags in https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags",
+				MarkdownDescription: "The image of the cluster instance. You can specify the tag of the image, please select limited tags in https://cloud.pgvecto.rs/api/v1/images",
 				Required:            true,
 				Validators: []validator.String{
 					imageValidator{},
@@ -259,6 +259,11 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	var response *client.CNPGCluster
 	var err error
 
+	image := fmt.Sprintf("modelzai/pgvecto-rs:%s", data.Image.ValueString())
+	if !strings.Contains(image, "exts") {
+		image = fmt.Sprintf("modelzai/vchord-cnpg:%s", data.Image.ValueString())
+	}
+
 	spec := client.CNPGClusterSpec{
 		Name:           data.ClusterName.ValueString(),
 		Plan:           client.CNPGClusterPlan(data.Plan.ValueString()),
@@ -268,7 +273,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 			Region: data.Region.ValueString(),
 		},
 		PostgreSQLConfig: client.PostgreSQLConfig{
-			Image:          fmt.Sprintf("modelzai/pgvecto-rs:%s", data.Image.ValueString()),
+			Image:          image,
 			PGDataDiskSize: data.PGDataDiskSize.ValueString(),
 			VectorConfig: client.VectorConfig{
 				DatabaseName: data.DatabaseName.ValueString(),
