@@ -21,10 +21,10 @@ Cluster resource. This resource allows you to create a new PGVecto.rs cluster.
 - `cluster_name` (String) The name of the cluster to be created. It is a string of no more than 32 characters.
 - `cluster_provider` (String) The cloud provider of the cluster instance. At present, only aws is supported.
 - `database_name` (String) The name of the database.
-- `image` (String) The image of the cluster instance. You can specify the tag of the image, please select limited tags in https://hub.docker.com/repository/docker/modelzai/pgvecto-rs/tags
+- `image` (String) The image of the cluster instance. You can specify the tag of the image, please select limited tags in https://cloud.pgvecto.rs/api/v1/images
 - `plan` (String) The plan tier of the PGVecto.rs Cloud service. Available options are Starter and Enterprise.
 - `region` (String) The region of the cluster instance.Available options are us-east-1,eu-west-1
-- `server_resource` (String) The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g
+- `server_resource` (String) The server resource of the cluster instance. Available aws-t3-xlarge-4c-16g, aws-m7i-large-2c-8g, aws-r7i-large-2c-16g,aws-r7i-xlarge-4c-32g,aws-i4i-xlarge-4c-32g
 
 ### Optional
 
